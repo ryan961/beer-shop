@@ -5,16 +5,12 @@ import (
 	"time"
 
 	"github.com/go-kratos/kratos/v2/log"
-	"github.com/google/wire"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
 
 	"github.com/go-kratos/beer-shop/app/cart/service/internal/conf"
 )
-
-// ProviderSet is data providers.
-var ProviderSet = wire.NewSet(NewData, NewCartRepo, NewMongo)
 
 // Data .
 type Data struct {
@@ -36,17 +32,19 @@ func NewMongo(conf *conf.Data) *mongo.Database {
 }
 
 // NewData .
-func NewData(database *mongo.Database, logger log.Logger) (*Data, func(), error) {
+func NewData(database *mongo.Database, logger log.Logger) (*Data, error) {
 	log := log.NewHelper(log.With(logger, "module", "cart-service/data"))
-	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
 
 	d := &Data{
 		db:  database,
 		log: log,
 	}
-	return d, func() {
-		if err := d.db.Client().Disconnect(ctx); err != nil {
-			log.Error(err)
-		}
-	}, nil
+	return d, nil
+}
+
+func (d *Data) Shutdown(ctx context.Context) error {
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+
+	return d.db.Client().Disconnect(ctx)
 }

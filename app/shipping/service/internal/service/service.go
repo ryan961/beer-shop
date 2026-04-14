@@ -4,11 +4,7 @@ import (
 	v1 "github.com/go-kratos/beer-shop/api/_gen/go/shipping/service/v1"
 	"github.com/go-kratos/beer-shop/app/shipping/service/internal/biz"
 	"github.com/go-kratos/kratos/v2/log"
-	"github.com/google/wire"
 )
-
-// ProviderSet is service providers.
-var ProviderSet = wire.NewSet(NewShippingService)
 
 type ShippingService struct {
 	v1.UnimplementedShippingServer

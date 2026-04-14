@@ -5,11 +5,7 @@ import (
 	"github.com/go-kratos/beer-shop/app/user/service/internal/biz"
 
 	"github.com/go-kratos/kratos/v2/log"
-	"github.com/google/wire"
 )
-
-// ProviderSet is service providers.
-var ProviderSet = wire.NewSet(NewUserService)
 
 type UserService struct {
 	v1.UnimplementedUserServer

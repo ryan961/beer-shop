@@ -1,7 +1,3 @@
-// +build wireinject
-
-// The build tag makes sure the stub is not built in the final build.
-
 package main
 
 import (
@@ -13,11 +9,50 @@ import (
 
 	"github.com/go-kratos/kratos/v2"
 	"github.com/go-kratos/kratos/v2/log"
-	"github.com/google/wire"
+	"github.com/go-kratos/kratos/v2/registry"
+	"github.com/go-kratos/kratos/v2/transport/grpc"
+	"github.com/samber/do/v2"
 	tracesdk "go.opentelemetry.io/otel/sdk/trace"
 )
 
 // initApp init kratos application.
-func initApp(*conf.Server, *conf.Registry, *conf.Data, log.Logger, *tracesdk.TracerProvider) (*kratos.App, func(), error) {
-	panic(wire.Build(server.ProviderSet, data.ProviderSet, biz.ProviderSet, service.ProviderSet, newApp))
+func initApp(confServer *conf.Server, registryConfig *conf.Registry, confData *conf.Data, logger log.Logger, tracerProvider *tracesdk.TracerProvider) (*kratos.App, func(), error) {
+	injector := do.New(
+		func(i do.Injector) {
+			do.Provide(i, func(i do.Injector) (*data.Data, error) {
+				return data.NewData(data.NewMongo(confData), logger)
+			})
+			do.Provide(i, func(i do.Injector) (biz.CartRepo, error) {
+				return data.NewCartRepo(do.MustInvoke[*data.Data](i), logger), nil
+			})
+			do.Provide(i, func(i do.Injector) (*biz.CartUseCase, error) {
+				return biz.NewCartUseCase(do.MustInvoke[biz.CartRepo](i), logger), nil
+			})
+			do.Provide(i, func(i do.Injector) (*service.CartService, error) {
+				return service.NewCartService(do.MustInvoke[*biz.CartUseCase](i), logger), nil
+			})
+			do.Provide(i, func(i do.Injector) (*grpc.Server, error) {
+				return server.NewGRPCServer(confServer, logger, tracerProvider, do.MustInvoke[*service.CartService](i)), nil
+			})
+			do.Provide(i, func(i do.Injector) (registry.Registrar, error) {
+				return server.NewRegistrar(registryConfig), nil
+			})
+			do.Provide(i, func(i do.Injector) (*kratos.App, error) {
+				return newApp(
+					logger,
+					do.MustInvoke[*grpc.Server](i),
+					do.MustInvoke[registry.Registrar](i),
+				), nil
+			})
+		},
+	)
+
+	app, err := do.Invoke[*kratos.App](injector)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return app, func() {
+		injector.Shutdown()
+	}, nil
 }

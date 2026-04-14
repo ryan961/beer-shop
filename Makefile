@@ -15,9 +15,9 @@ api:
 	find app -mindepth 2 -maxdepth 2 -type d -print | xargs -L 1 bash -c 'cd "$$0" && pwd && $(MAKE) api'
 
 .PHONY: wire
-# generate wire
+# wire target removed
 wire:
-	find app -mindepth 2 -maxdepth 2 -type d -print | xargs -L 1 bash -c 'cd "$$0" && pwd && $(MAKE) wire'
+	@echo "wire has been removed; dependency injection is now handled by samber/do."
 
 .PHONY: proto
 # generate proto

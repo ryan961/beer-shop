@@ -3,6 +3,7 @@ package data
 import (
 	"context"
 	entsql "entgo.io/ent/dialect/sql"
+	"errors"
 	"github.com/XSAM/otelsql"
 	"github.com/go-redis/redis/extra/redisotel/v8"
 	"github.com/go-redis/redis/v8"
@@ -14,14 +15,10 @@ import (
 	"github.com/go-kratos/beer-shop/app/user/service/internal/data/ent/migrate"
 
 	"github.com/go-kratos/kratos/v2/log"
-	"github.com/google/wire"
 
 	// init mysql driver
 	_ "github.com/go-sql-driver/mysql"
 )
-
-// ProviderSet is data providers.
-var ProviderSet = wire.NewSet(NewData, NewEntClient, NewRedisCmd, NewUserRepo, NewCardRepo, NewAddressRepo)
 
 // Data .
 type Data struct {
@@ -76,16 +73,19 @@ func NewRedisCmd(conf *conf.Data, logger log.Logger) redis.Cmdable {
 }
 
 // NewData .
-func NewData(entClient *ent.Client, redisCmd redis.Cmdable, logger log.Logger) (*Data, func(), error) {
-	log := log.NewHelper(log.With(logger, "module", "user-service/data"))
-
+func NewData(entClient *ent.Client, redisCmd redis.Cmdable, logger log.Logger) (*Data, error) {
 	d := &Data{
 		db:       entClient,
 		redisCli: redisCmd,
 	}
-	return d, func() {
-		if err := d.db.Close(); err != nil {
-			log.Error(err)
-		}
-	}, nil
+	return d, nil
+}
+
+func (d *Data) Shutdown() error {
+	err := d.db.Close()
+	if closer, ok := d.redisCli.(interface{ Close() error }); ok {
+		return errors.Join(err, closer.Close())
+	}
+
+	return err
 }

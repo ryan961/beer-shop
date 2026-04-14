@@ -2,7 +2,7 @@ package service
 
 import (
 	"context"
-	"github.com/go-kratos/beer-shop/api/_gen/go/shop/interface/v1"
+	v1 "github.com/go-kratos/beer-shop/api/_gen/go/shop/interface/v1"
 )
 
 func (s *ShopInterface) ListCartItem(ctx context.Context, req *v1.ListCartItemReq) (*v1.ListCartItemReply, error) {

@@ -1,19 +1,14 @@
 package data
 
 import (
+	"github.com/go-kratos/beer-shop/app/order/service/internal/conf"
 	"github.com/go-kratos/kratos/v2/log"
-	"github.com/google/wire"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
-
-	"github.com/go-kratos/beer-shop/app/order/service/internal/conf"
 
 	// init mysql driver
 	_ "github.com/go-sql-driver/mysql"
 )
-
-// ProviderSet is data providers.
-var ProviderSet = wire.NewSet(NewData, NewDB, NewOrderRepo)
 
 // Data .
 type Data struct {
@@ -36,14 +31,12 @@ func NewDB(conf *conf.Data, logger log.Logger) *gorm.DB {
 }
 
 // NewData .
-func NewData(db *gorm.DB, logger log.Logger) (*Data, func(), error) {
+func NewData(db *gorm.DB, logger log.Logger) (*Data, error) {
 	log := log.NewHelper(log.With(logger, "module", "order-service/data"))
 
 	d := &Data{
 		db:  db,
 		log: log,
 	}
-	return d, func() {
-
-	}, nil
+	return d, nil
 }

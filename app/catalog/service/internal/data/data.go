@@ -6,16 +6,12 @@ import (
 
 	"github.com/go-kratos/beer-shop/app/catalog/service/internal/data/ent"
 	"github.com/go-kratos/kratos/v2/log"
-	"github.com/google/wire"
 
 	"github.com/go-kratos/beer-shop/app/catalog/service/internal/conf"
 
 	// init mysql driver
 	_ "github.com/go-sql-driver/mysql"
 )
-
-// ProviderSet is data providers.
-var ProviderSet = wire.NewSet(NewData, NewEntClient, NewBeerRepo)
 
 // Data .
 type Data struct {
@@ -41,16 +37,16 @@ func NewEntClient(conf *conf.Data, logger log.Logger) *ent.Client {
 }
 
 // NewData .
-func NewData(entClient *ent.Client, logger log.Logger) (*Data, func(), error) {
+func NewData(entClient *ent.Client, logger log.Logger) (*Data, error) {
 	log := log.NewHelper(log.With(logger, "module", "catalog-service/data"))
 
 	d := &Data{
 		db:  entClient,
 		log: log,
 	}
-	return d, func() {
-		if err := d.db.Close(); err != nil {
-			log.Error(err)
-		}
-	}, nil
+	return d, nil
+}
+
+func (d *Data) Shutdown() error {
+	return d.db.Close()
 }

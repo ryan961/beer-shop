@@ -18,23 +18,8 @@ import (
 	"github.com/go-kratos/kratos/v2/registry"
 	"github.com/go-kratos/kratos/v2/transport/grpc"
 	jwt2 "github.com/golang-jwt/jwt/v4"
-	"github.com/google/wire"
 	consulAPI "github.com/hashicorp/consul/api"
 	tracesdk "go.opentelemetry.io/otel/sdk/trace"
-)
-
-// ProviderSet is data providers.
-var ProviderSet = wire.NewSet(
-	NewData,
-	NewDiscovery,
-	NewRegistrar,
-	NewUserServiceClient,
-	NewCartServiceClient,
-	NewCatalogServiceClient,
-	NewOrderServiceClient,
-	NewPaymentServiceClient,
-	NewUserRepo,
-	NewBeerRepo,
 )
 
 // Data .

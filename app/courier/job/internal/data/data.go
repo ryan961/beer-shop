@@ -13,21 +13,11 @@ import (
 	"github.com/go-kratos/kratos/v2/middleware/tracing"
 	"github.com/go-kratos/kratos/v2/registry"
 	"github.com/go-kratos/kratos/v2/transport/grpc"
-	"github.com/google/wire"
 	consulAPI "github.com/hashicorp/consul/api"
 	tracesdk "go.opentelemetry.io/otel/sdk/trace"
 
 	// init mysql driver
 	_ "github.com/go-sql-driver/mysql"
-)
-
-// ProviderSet is data providers.
-var ProviderSet = wire.NewSet(
-	NewData,
-	NewKafkaConsumer,
-	NewCourierRepo,
-	NewDiscovery,
-	NewOrderServiceClient,
 )
 
 // Data .
@@ -39,16 +29,14 @@ type Data struct {
 
 // NewData .
 func NewData(consumer sarama.Consumer, logger log.Logger, oc orderv1.OrderClient,
-) (*Data, func(), error) {
+) (*Data, error) {
 	log := log.NewHelper(log.With(logger, "module", "courier-job/data"))
 	d := &Data{
 		kc:  consumer,
 		oc:  oc,
 		log: log,
 	}
-	return d, func() {
-		d.kc.Close()
-	}, nil
+	return d, nil
 }
 
 func NewKafkaConsumer(conf *conf.Data) sarama.Consumer {
@@ -86,4 +74,8 @@ func NewOrderServiceClient(r registry.Discovery, tp *tracesdk.TracerProvider) or
 		panic(err)
 	}
 	return orderv1.NewOrderClient(conn)
+}
+
+func (d *Data) Shutdown() error {
+	return d.kc.Close()
 }

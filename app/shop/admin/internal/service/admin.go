@@ -2,7 +2,7 @@ package service
 
 import (
 	"context"
-	"github.com/go-kratos/beer-shop/api/_gen/go/shop/admin/v1"
+	v1 "github.com/go-kratos/beer-shop/api/_gen/go/shop/admin/v1"
 )
 
 func (s *ShopAdmin) Login(ctx context.Context, req *v1.LoginReq) (*v1.LoginReply, error) {
