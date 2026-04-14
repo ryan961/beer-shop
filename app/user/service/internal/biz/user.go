@@ -5,7 +5,7 @@ import (
 	"errors"
 	"math/rand"
 
-	v1 "github.com/go-kratos/beer-shop/api/user/service/v1"
+	v1 "github.com/go-kratos/beer-shop/api/_gen/go/user/service/v1"
 
 	"github.com/go-kratos/kratos/v2/log"
 )

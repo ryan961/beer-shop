@@ -6,7 +6,7 @@ import (
 	"github.com/go-kratos/beer-shop/app/shop/admin/internal/biz"
 	"github.com/go-kratos/kratos/v2/log"
 
-	catalogv1 "github.com/go-kratos/beer-shop/api/catalog/service/v1"
+	catalogv1 "github.com/go-kratos/beer-shop/api/_gen/go/catalog/service/v1"
 )
 
 var _ biz.CatalogRepo = (*catalogRepo)(nil)

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"golang.org/x/sync/singleflight"
 
-	usV1 "github.com/go-kratos/beer-shop/api/user/service/v1"
+	usV1 "github.com/go-kratos/beer-shop/api/_gen/go/user/service/v1"
 	"github.com/go-kratos/beer-shop/app/shop/interface/internal/biz"
 
 	"github.com/go-kratos/kratos/v2/log"

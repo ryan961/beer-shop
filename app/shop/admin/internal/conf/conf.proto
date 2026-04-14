@@ -1,18 +1,18 @@
 syntax = "proto3";
 package kratos.api;
 
-option go_package = "shop/interface/internal/conf;conf";
-
 import "google/protobuf/duration.proto";
 
+option go_package = "shop/interface/internal/conf;conf";
+
 message Bootstrap {
-    Trace trace = 1;
-    Server server = 2;
-    Data data = 3;
+  Trace trace = 1;
+  Server server = 2;
+  Data data = 3;
 }
 
 message Trace {
-    string endpoint = 1;
+  string endpoint = 1;
 }
 
 message Server {

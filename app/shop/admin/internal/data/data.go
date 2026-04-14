@@ -8,11 +8,11 @@ import (
 
 	"context"
 
-	cartv1 "github.com/go-kratos/beer-shop/api/cart/service/v1"
-	catalogv1 "github.com/go-kratos/beer-shop/api/catalog/service/v1"
-	orderv1 "github.com/go-kratos/beer-shop/api/order/service/v1"
-	paymentv1 "github.com/go-kratos/beer-shop/api/payment/service/v1"
-	userv1 "github.com/go-kratos/beer-shop/api/user/service/v1"
+	cartv1 "github.com/go-kratos/beer-shop/api/_gen/go/cart/service/v1"
+	catalogv1 "github.com/go-kratos/beer-shop/api/_gen/go/catalog/service/v1"
+	orderv1 "github.com/go-kratos/beer-shop/api/_gen/go/order/service/v1"
+	paymentv1 "github.com/go-kratos/beer-shop/api/_gen/go/payment/service/v1"
+	userv1 "github.com/go-kratos/beer-shop/api/_gen/go/user/service/v1"
 
 	consul "github.com/go-kratos/kratos/contrib/registry/consul/v2"
 	"github.com/go-kratos/kratos/v2/registry"

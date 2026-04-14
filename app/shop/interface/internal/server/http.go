@@ -2,7 +2,7 @@ package server
 
 import (
 	"context"
-	"github.com/go-kratos/beer-shop/api/shop/interface/v1"
+	"github.com/go-kratos/beer-shop/api/_gen/go/shop/interface/v1"
 	"github.com/go-kratos/beer-shop/app/shop/interface/internal/conf"
 	"github.com/go-kratos/beer-shop/app/shop/interface/internal/service"
 	"github.com/go-kratos/kratos/v2/log"

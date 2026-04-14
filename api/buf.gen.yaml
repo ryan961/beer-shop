@@ -1,0 +1,30 @@
+version: v2
+managed:
+  enabled: true
+  disable:
+    - file_option: go_package
+      module: buf.build/googleapis/googleapis
+    - file_option: go_package
+      module: buf.build/kratos/apis
+    - file_option: go_package
+      module: buf.build/gnostic/gnostic
+    - file_option: go_package
+      module: buf.build/bufbuild/protovalidate
+  override:
+    - file_option: optimize_for
+      value: SPEED
+    - file_option: go_package_prefix
+      value: tlgitea.com/pingtai/gopkg/api/_gen/go
+plugins:
+  - local: protoc-gen-go
+    out: _gen/go
+    opt: paths=source_relative
+  - local: protoc-gen-go-grpc
+    out: _gen/go
+    opt: paths=source_relative
+  - local: protoc-gen-go-http
+    out: _gen/go
+    opt: paths=source_relative
+  - local: protoc-gen-go-errors
+    out: _gen/go
+    opt: paths=source_relative

@@ -3,7 +3,7 @@ package data
 import (
 	"context"
 
-	orderv1 "github.com/go-kratos/beer-shop/api/order/service/v1"
+	orderv1 "github.com/go-kratos/beer-shop/api/_gen/go/order/service/v1"
 	"github.com/go-kratos/beer-shop/app/courier/job/internal/conf"
 
 	"github.com/Shopify/sarama"

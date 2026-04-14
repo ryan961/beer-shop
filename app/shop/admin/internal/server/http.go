@@ -1,7 +1,7 @@
 package server
 
 import (
-	"github.com/go-kratos/beer-shop/api/shop/admin/v1"
+	"github.com/go-kratos/beer-shop/api/_gen/go/shop/admin/v1"
 	"github.com/go-kratos/beer-shop/app/shop/admin/internal/conf"
 	"github.com/go-kratos/beer-shop/app/shop/admin/internal/service"
 	"github.com/go-kratos/kratos/v2/log"
