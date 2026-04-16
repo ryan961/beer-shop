@@ -3,6 +3,7 @@ package biz
 import (
 	"context"
 	"github.com/go-kratos/kratos/v2/log"
+	"github.com/samber/do/v2"
 )
 
 type ShipOrder struct {
@@ -19,8 +20,10 @@ type ShippingUseCase struct {
 	log  *log.Helper
 }
 
-func NewShippingUseCase(repo ShippingRepo, logger log.Logger) *ShippingUseCase {
-	return &ShippingUseCase{repo: repo, log: log.NewHelper(log.With(logger, "module", "usecase/shipping"))}
+func NewShippingUseCase(i do.Injector) (*ShippingUseCase, error) {
+	repo := do.MustInvoke[ShippingRepo](i)
+	logger := do.MustInvoke[log.Logger](i)
+	return &ShippingUseCase{repo: repo, log: log.NewHelper(log.With(logger, "module", "usecase/shipping"))}, nil
 }
 
 func (uc *ShippingUseCase) ShipOrder(ctx context.Context, o *ShipOrder) (err error) {

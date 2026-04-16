@@ -3,12 +3,13 @@ package data
 import (
 	"context"
 	"fmt"
-	"golang.org/x/sync/singleflight"
 
 	ctV1 "github.com/go-kratos/beer-shop/api/_gen/go/catalog/service/v1"
 	"github.com/go-kratos/beer-shop/app/shop/interface/internal/biz"
 
 	"github.com/go-kratos/kratos/v2/log"
+	"github.com/samber/do/v2"
+	"golang.org/x/sync/singleflight"
 )
 
 var _ biz.CatalogRepo = (*catalogRepo)(nil)
@@ -19,12 +20,15 @@ type catalogRepo struct {
 	sg   *singleflight.Group
 }
 
-func NewBeerRepo(data *Data, logger log.Logger) biz.CatalogRepo {
+func NewBeerRepo(i do.Injector) (biz.CatalogRepo, error) {
+	data := do.MustInvoke[*Data](i)
+	logger := do.MustInvoke[log.Logger](i)
+
 	return &catalogRepo{
 		data: data,
 		log:  log.NewHelper(log.With(logger, "module", "data/beer")),
 		sg:   &singleflight.Group{},
-	}
+	}, nil
 }
 
 func (r *catalogRepo) GetBeer(ctx context.Context, id int64) (*biz.Beer, error) {

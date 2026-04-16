@@ -3,8 +3,10 @@ package biz
 import (
 	"context"
 	"errors"
-	"github.com/go-kratos/kratos/v2/log"
 	"math/rand"
+
+	"github.com/go-kratos/kratos/v2/log"
+	"github.com/samber/do/v2"
 )
 
 var (
@@ -79,13 +81,17 @@ type UserUseCase struct {
 	authUc *AuthUseCase
 }
 
-func NewUserUseCase(repo UserRepo, logger log.Logger, authUc *AuthUseCase) *UserUseCase {
-	log := log.NewHelper(log.With(logger, "module", "usecase/interface"))
+func NewUserUseCase(i do.Injector) (*UserUseCase, error) {
+	repo := do.MustInvoke[UserRepo](i)
+	logger := do.MustInvoke[log.Logger](i)
+	authUc := do.MustInvoke[*AuthUseCase](i)
+	helper := log.NewHelper(log.With(logger, "module", "usecase/interface"))
+
 	return &UserUseCase{
 		repo:   repo,
-		log:    log,
+		log:    helper,
 		authUc: authUc,
-	}
+	}, nil
 }
 
 func (uc *UserUseCase) Logout(ctx context.Context, u *User) error {

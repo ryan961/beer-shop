@@ -4,6 +4,7 @@ import (
 	v1 "github.com/go-kratos/beer-shop/api/_gen/go/shipping/service/v1"
 	"github.com/go-kratos/beer-shop/app/shipping/service/internal/biz"
 	"github.com/go-kratos/kratos/v2/log"
+	"github.com/samber/do/v2"
 )
 
 type ShippingService struct {
@@ -13,8 +14,11 @@ type ShippingService struct {
 	log *log.Helper
 }
 
-func NewShippingService(oc *biz.ShippingUseCase, logger log.Logger) *ShippingService {
+func NewShippingService(i do.Injector) (*ShippingService, error) {
+	oc := do.MustInvoke[*biz.ShippingUseCase](i)
+	logger := do.MustInvoke[log.Logger](i)
 	return &ShippingService{
 		oc:  oc,
-		log: log.NewHelper(log.With(logger, "module", "service/shipping"))}
+		log: log.NewHelper(log.With(logger, "module", "service/shipping")),
+	}, nil
 }

@@ -4,12 +4,12 @@ import (
 	"context"
 	"time"
 
+	"github.com/go-kratos/beer-shop/app/cart/service/internal/conf"
 	"github.com/go-kratos/kratos/v2/log"
+	"github.com/samber/do/v2"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
-
-	"github.com/go-kratos/beer-shop/app/cart/service/internal/conf"
 )
 
 // Data .
@@ -32,12 +32,15 @@ func NewMongo(conf *conf.Data) *mongo.Database {
 }
 
 // NewData .
-func NewData(database *mongo.Database, logger log.Logger) (*Data, error) {
-	log := log.NewHelper(log.With(logger, "module", "cart-service/data"))
+func NewData(i do.Injector) (*Data, error) {
+	confData := do.MustInvoke[*conf.Data](i)
+	logger := do.MustInvoke[log.Logger](i)
+	database := NewMongo(confData)
+	helper := log.NewHelper(log.With(logger, "module", "cart-service/data"))
 
 	d := &Data{
 		db:  database,
-		log: log,
+		log: helper,
 	}
 	return d, nil
 }

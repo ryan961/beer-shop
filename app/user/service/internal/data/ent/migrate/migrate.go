@@ -28,9 +28,10 @@ var (
 	// and therefore, it's recommended to enable this option to get more
 	// flexibility in the schema changes.
 	WithDropIndex = schema.WithDropIndex
-	// WithFixture sets the foreign-key renaming option to the migration when upgrading
-	// ent from v0.1.0 (issue-#285). Defaults to false.
-	WithFixture = schema.WithFixture
+	// WithFixture is kept as a compatibility no-op for older generated call sites.
+	WithFixture = func(bool) schema.MigrateOption {
+		return func(*schema.Atlas) {}
+	}
 	// WithForeignKeys enables creating foreign-key in schema DDL. This defaults to true.
 	WithForeignKeys = schema.WithForeignKeys
 )

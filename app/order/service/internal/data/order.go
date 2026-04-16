@@ -9,6 +9,7 @@ import (
 	"github.com/go-kratos/beer-shop/pkg/util/pagination"
 
 	"github.com/go-kratos/kratos/v2/log"
+	"github.com/samber/do/v2"
 
 	"github.com/go-kratos/beer-shop/app/order/service/internal/biz"
 )
@@ -28,11 +29,13 @@ type Order struct {
 	UpdatedAt time.Time
 }
 
-func NewOrderRepo(data *Data, logger log.Logger) biz.OrderRepo {
+func NewOrderRepo(i do.Injector) (biz.OrderRepo, error) {
+	data := do.MustInvoke[*Data](i)
+	logger := do.MustInvoke[log.Logger](i)
 	return &orderRepo{
 		data: data,
 		log:  log.NewHelper(log.With(logger, "module", "data/order")),
-	}
+	}, nil
 }
 
 func (r *orderRepo) CreateOrder(ctx context.Context, b *biz.Order) (*biz.Order, error) {

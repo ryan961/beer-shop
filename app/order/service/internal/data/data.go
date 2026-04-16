@@ -3,6 +3,7 @@ package data
 import (
 	"github.com/go-kratos/beer-shop/app/order/service/internal/conf"
 	"github.com/go-kratos/kratos/v2/log"
+	"github.com/samber/do/v2"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 
@@ -31,12 +32,15 @@ func NewDB(conf *conf.Data, logger log.Logger) *gorm.DB {
 }
 
 // NewData .
-func NewData(db *gorm.DB, logger log.Logger) (*Data, error) {
-	log := log.NewHelper(log.With(logger, "module", "order-service/data"))
+func NewData(i do.Injector) (*Data, error) {
+	confData := do.MustInvoke[*conf.Data](i)
+	logger := do.MustInvoke[log.Logger](i)
+	db := NewDB(confData, logger)
+	helper := log.NewHelper(log.With(logger, "module", "order-service/data"))
 
 	d := &Data{
 		db:  db,
-		log: log,
+		log: helper,
 	}
 	return d, nil
 }

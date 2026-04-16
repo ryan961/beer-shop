@@ -7,6 +7,7 @@ import (
 	"github.com/go-kratos/beer-shop/app/user/service/internal/data/ent/user"
 
 	"github.com/go-kratos/kratos/v2/log"
+	"github.com/samber/do/v2"
 )
 
 var _ biz.CardRepo = (*cardRepo)(nil)
@@ -16,11 +17,13 @@ type cardRepo struct {
 	log  *log.Helper
 }
 
-func NewCardRepo(data *Data, logger log.Logger) biz.CardRepo {
+func NewCardRepo(i do.Injector) (biz.CardRepo, error) {
+	data := do.MustInvoke[*Data](i)
+	logger := do.MustInvoke[log.Logger](i)
 	return &cardRepo{
 		data: data,
 		log:  log.NewHelper(log.With(logger, "module", "data/card")),
-	}
+	}, nil
 }
 
 func (r *cardRepo) CreateCard(ctx context.Context, c *biz.Card) (*biz.Card, error) {

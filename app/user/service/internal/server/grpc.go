@@ -10,21 +10,27 @@ import (
 	"github.com/go-kratos/kratos/v2/middleware/recovery"
 	"github.com/go-kratos/kratos/v2/middleware/tracing"
 	"github.com/go-kratos/kratos/v2/transport/grpc"
-	jwt2 "github.com/golang-jwt/jwt/v4"
+	jwtv5 "github.com/golang-jwt/jwt/v5"
+	"github.com/samber/do/v2"
 	tracesdk "go.opentelemetry.io/otel/sdk/trace"
 )
 
 // NewGRPCServer new a gRPC server.
-func NewGRPCServer(c *conf.Server, ac *conf.Auth, logger log.Logger, tp *tracesdk.TracerProvider, s *service.UserService) *grpc.Server {
+func NewGRPCServer(i do.Injector) (*grpc.Server, error) {
+	c := do.MustInvoke[*conf.Server](i)
+	ac := do.MustInvoke[*conf.Auth](i)
+	logger := do.MustInvoke[log.Logger](i)
+	tp := do.MustInvoke[*tracesdk.TracerProvider](i)
+	s := do.MustInvoke[*service.UserService](i)
 	var opts = []grpc.ServerOption{
 		grpc.Middleware(
 			recovery.Recovery(),
 			tracing.Server(
 				tracing.WithTracerProvider(tp)),
 			logging.Server(logger),
-			jwt.Server(func(token *jwt2.Token) (interface{}, error) {
+			jwt.Server(func(token *jwtv5.Token) (any, error) {
 				return []byte(ac.Key), nil
-			}, jwt.WithSigningMethod(jwt2.SigningMethodHS256)),
+			}, jwt.WithSigningMethod(jwtv5.SigningMethodHS256)),
 		),
 	}
 	if c.Grpc.Network != "" {
@@ -38,5 +44,5 @@ func NewGRPCServer(c *conf.Server, ac *conf.Auth, logger log.Logger, tp *tracesd
 	}
 	srv := grpc.NewServer(opts...)
 	v1.RegisterUserServer(srv, s)
-	return srv
+	return srv, nil
 }

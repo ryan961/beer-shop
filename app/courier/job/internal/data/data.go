@@ -2,6 +2,7 @@ package data
 
 import (
 	"context"
+	"errors"
 
 	orderv1 "github.com/go-kratos/beer-shop/api/_gen/go/order/service/v1"
 	"github.com/go-kratos/beer-shop/app/courier/job/internal/conf"
@@ -14,6 +15,7 @@ import (
 	"github.com/go-kratos/kratos/v2/registry"
 	"github.com/go-kratos/kratos/v2/transport/grpc"
 	consulAPI "github.com/hashicorp/consul/api"
+	"github.com/samber/do/v2"
 	tracesdk "go.opentelemetry.io/otel/sdk/trace"
 
 	// init mysql driver
@@ -28,13 +30,16 @@ type Data struct {
 }
 
 // NewData .
-func NewData(consumer sarama.Consumer, logger log.Logger, oc orderv1.OrderClient,
-) (*Data, error) {
-	log := log.NewHelper(log.With(logger, "module", "courier-job/data"))
+func NewData(i do.Injector) (*Data, error) {
+	confData := do.MustInvoke[*conf.Data](i)
+	logger := do.MustInvoke[log.Logger](i)
+	consumer := NewKafkaConsumer(confData)
+	oc := do.MustInvoke[orderv1.OrderClient](i)
+	helper := log.NewHelper(log.With(logger, "module", "courier-job/data"))
 	d := &Data{
 		kc:  consumer,
 		oc:  oc,
-		log: log,
+		log: helper,
 	}
 	return d, nil
 }
@@ -48,19 +53,28 @@ func NewKafkaConsumer(conf *conf.Data) sarama.Consumer {
 	return p
 }
 
-func NewDiscovery(conf *conf.Registry) registry.Discovery {
+func NewDiscovery(i do.Injector) (registry.Discovery, error) {
+	conf := do.MustInvoke[*conf.Registry](i)
+	if conf == nil || conf.Consul == nil {
+		return nil, errors.New("registry consul config is required")
+	}
 	c := consulAPI.DefaultConfig()
 	c.Address = conf.Consul.Address
 	c.Scheme = conf.Consul.Scheme
 	cli, err := consulAPI.NewClient(c)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	r := consul.New(cli, consul.WithHealthCheck(false))
-	return r
+	return r, nil
 }
 
-func NewOrderServiceClient(r registry.Discovery, tp *tracesdk.TracerProvider) orderv1.OrderClient {
+func NewOrderServiceClient(i do.Injector) (orderv1.OrderClient, error) {
+	r := do.MustInvoke[registry.Discovery](i)
+	tp := do.MustInvoke[*tracesdk.TracerProvider](i)
+	if r == nil {
+		return nil, errors.New("service discovery is required")
+	}
 	conn, err := grpc.DialInsecure(
 		context.Background(),
 		grpc.WithEndpoint("discovery:///beer.order.service"),
@@ -71,9 +85,9 @@ func NewOrderServiceClient(r registry.Discovery, tp *tracesdk.TracerProvider) or
 		),
 	)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
-	return orderv1.NewOrderClient(conn)
+	return orderv1.NewOrderClient(conn), nil
 }
 
 func (d *Data) Shutdown() error {

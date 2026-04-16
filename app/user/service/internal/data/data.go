@@ -15,6 +15,7 @@ import (
 	"github.com/go-kratos/beer-shop/app/user/service/internal/data/ent/migrate"
 
 	"github.com/go-kratos/kratos/v2/log"
+	"github.com/samber/do/v2"
 
 	// init mysql driver
 	_ "github.com/go-sql-driver/mysql"
@@ -73,7 +74,11 @@ func NewRedisCmd(conf *conf.Data, logger log.Logger) redis.Cmdable {
 }
 
 // NewData .
-func NewData(entClient *ent.Client, redisCmd redis.Cmdable, logger log.Logger) (*Data, error) {
+func NewData(i do.Injector) (*Data, error) {
+	confData := do.MustInvoke[*conf.Data](i)
+	logger := do.MustInvoke[log.Logger](i)
+	entClient := NewEntClient(confData, logger)
+	redisCmd := NewRedisCmd(confData, logger)
 	d := &Data{
 		db:       entClient,
 		redisCli: redisCmd,

@@ -5,6 +5,7 @@ import (
 	"github.com/go-kratos/beer-shop/app/user/service/internal/biz"
 
 	"github.com/go-kratos/kratos/v2/log"
+	"github.com/samber/do/v2"
 )
 
 type UserService struct {
@@ -16,10 +17,15 @@ type UserService struct {
 	log *log.Helper
 }
 
-func NewUserService(uc *biz.UserUseCase, cc *biz.CardUseCase, ac *biz.AddressUseCase, logger log.Logger) *UserService {
+func NewUserService(i do.Injector) (*UserService, error) {
+	uc := do.MustInvoke[*biz.UserUseCase](i)
+	cc := do.MustInvoke[*biz.CardUseCase](i)
+	ac := do.MustInvoke[*biz.AddressUseCase](i)
+	logger := do.MustInvoke[log.Logger](i)
 	return &UserService{
 		uc:  uc,
 		ac:  ac,
 		cc:  cc,
-		log: log.NewHelper(log.With(logger, "module", "service/server-service"))}
+		log: log.NewHelper(log.With(logger, "module", "service/server-service")),
+	}, nil
 }

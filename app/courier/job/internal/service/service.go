@@ -4,6 +4,7 @@ import (
 	v1 "github.com/go-kratos/beer-shop/api/_gen/go/courier/job/v1"
 	"github.com/go-kratos/beer-shop/app/courier/job/internal/biz"
 	"github.com/go-kratos/kratos/v2/log"
+	"github.com/samber/do/v2"
 )
 
 type CourierService struct {
@@ -13,8 +14,11 @@ type CourierService struct {
 	log *log.Helper
 }
 
-func NewCourierService(oc *biz.CourierUseCase, logger log.Logger) *CourierService {
+func NewCourierService(i do.Injector) (*CourierService, error) {
+	oc := do.MustInvoke[*biz.CourierUseCase](i)
+	logger := do.MustInvoke[log.Logger](i)
 	return &CourierService{
 		oc:  oc,
-		log: log.NewHelper(log.With(logger, "module", "service/courier"))}
+		log: log.NewHelper(log.With(logger, "module", "service/courier")),
+	}, nil
 }

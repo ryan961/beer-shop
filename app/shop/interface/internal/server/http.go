@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+
 	v1 "github.com/go-kratos/beer-shop/api/_gen/go/shop/interface/v1"
 	"github.com/go-kratos/beer-shop/app/shop/interface/internal/conf"
 	"github.com/go-kratos/beer-shop/app/shop/interface/internal/service"
@@ -13,8 +14,9 @@ import (
 	"github.com/go-kratos/kratos/v2/middleware/tracing"
 	"github.com/go-kratos/kratos/v2/transport/http"
 	"github.com/go-kratos/swagger-api/openapiv2"
-	jwt2 "github.com/golang-jwt/jwt/v4"
+	jwtv5 "github.com/golang-jwt/jwt/v5"
 	"github.com/gorilla/handlers"
+	"github.com/samber/do/v2"
 	tracesdk "go.opentelemetry.io/otel/sdk/trace"
 )
 
@@ -32,22 +34,25 @@ func NewWhiteListMatcher() selector.MatchFunc {
 }
 
 // NewHTTPServer new an HTTP server.
-func NewHTTPServer(c *conf.Server, ac *conf.Auth, logger log.Logger, tp *tracesdk.TracerProvider, s *service.ShopInterface) *http.Server {
+func NewHTTPServer(i do.Injector) (*http.Server, error) {
+	c := do.MustInvoke[*conf.Server](i)
+	ac := do.MustInvoke[*conf.Auth](i)
+	logger := do.MustInvoke[log.Logger](i)
+	tp := do.MustInvoke[*tracesdk.TracerProvider](i)
+	s := do.MustInvoke[*service.ShopInterface](i)
+
 	var opts = []http.ServerOption{
 		http.Middleware(
 			recovery.Recovery(),
-			tracing.Server(
-				tracing.WithTracerProvider(tp)),
+			tracing.Server(tracing.WithTracerProvider(tp)),
 			logging.Server(logger),
 			selector.Server(
-				jwt.Server(func(token *jwt2.Token) (interface{}, error) {
+				jwt.Server(func(token *jwtv5.Token) (any, error) {
 					return []byte(ac.ApiKey), nil
-				}, jwt.WithSigningMethod(jwt2.SigningMethodHS256), jwt.WithClaims(func() jwt2.Claims {
-					return &jwt2.MapClaims{}
+				}, jwt.WithSigningMethod(jwtv5.SigningMethodHS256), jwt.WithClaims(func() jwtv5.Claims {
+					return jwtv5.MapClaims{}
 				})),
-			).
-				Match(NewWhiteListMatcher()).
-				Build(),
+			).Match(NewWhiteListMatcher()).Build(),
 		),
 		http.Filter(handlers.CORS(
 			handlers.AllowedHeaders([]string{"X-Requested-With", "Content-Type", "Authorization"}),
@@ -68,5 +73,5 @@ func NewHTTPServer(c *conf.Server, ac *conf.Auth, logger log.Logger, tp *tracesd
 	h := openapiv2.NewHandler()
 	srv.HandlePrefix("/q/", h)
 	v1.RegisterShopInterfaceHTTPServer(srv, s)
-	return srv
+	return srv, nil
 }

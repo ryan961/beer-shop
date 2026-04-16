@@ -3,6 +3,7 @@ package biz
 import (
 	usV1 "github.com/go-kratos/beer-shop/api/_gen/go/user/service/v1"
 	"github.com/go-kratos/kratos/v2/log"
+	"github.com/samber/do/v2"
 )
 
 type User struct {
@@ -18,11 +19,14 @@ type UserUseCase struct {
 	log  *log.Helper
 }
 
-func NewUserUseCase(repo UserRepo, logger log.Logger, us usV1.UserClient) *UserUseCase {
-	log := log.NewHelper(log.With(logger, "module", "usecase/interface"))
+func NewUserUseCase(i do.Injector) (*UserUseCase, error) {
+	repo := do.MustInvoke[UserRepo](i)
+	logger := do.MustInvoke[log.Logger](i)
+	us := do.MustInvoke[usV1.UserClient](i)
+	helper := log.NewHelper(log.With(logger, "module", "usecase/interface"))
 	return &UserUseCase{
 		repo: repo,
 		us:   us,
-		log:  log,
-	}
+		log:  helper,
+	}, nil
 }

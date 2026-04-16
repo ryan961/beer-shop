@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/go-kratos/beer-shop/app/shop/admin/internal/biz"
 	"github.com/go-kratos/kratos/v2/log"
+	"github.com/samber/do/v2"
 
 	userv1 "github.com/go-kratos/beer-shop/api/_gen/go/user/service/v1"
 )
@@ -15,11 +16,13 @@ type userRepo struct {
 	log  *log.Helper
 }
 
-func NewUserRepo(data *Data, logger log.Logger) biz.UserRepo {
+func NewUserRepo(i do.Injector) (biz.UserRepo, error) {
+	data := do.MustInvoke[*Data](i)
+	logger := do.MustInvoke[log.Logger](i)
 	return &userRepo{
 		data: data,
 		log:  log.NewHelper(log.With(logger, "module", "data/user")),
-	}
+	}, nil
 }
 
 

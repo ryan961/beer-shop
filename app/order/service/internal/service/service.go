@@ -5,6 +5,7 @@ import (
 	"github.com/go-kratos/beer-shop/app/order/service/internal/biz"
 
 	"github.com/go-kratos/kratos/v2/log"
+	"github.com/samber/do/v2"
 )
 
 type OrderService struct {
@@ -14,8 +15,11 @@ type OrderService struct {
 	log *log.Helper
 }
 
-func NewOrderService(oc *biz.OrderUseCase, logger log.Logger) *OrderService {
+func NewOrderService(i do.Injector) (*OrderService, error) {
+	oc := do.MustInvoke[*biz.OrderUseCase](i)
+	logger := do.MustInvoke[log.Logger](i)
 	return &OrderService{
 		oc:  oc,
-		log: log.NewHelper(log.With(logger, "module", "service/order"))}
+		log: log.NewHelper(log.With(logger, "module", "service/order")),
+	}, nil
 }

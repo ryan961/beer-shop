@@ -7,6 +7,7 @@ import (
 
 	"github.com/IBM/sarama"
 	"github.com/go-kratos/kratos/v2/log"
+	"github.com/samber/do/v2"
 
 	"github.com/go-kratos/beer-shop/app/shipping/service/internal/biz"
 )
@@ -18,11 +19,13 @@ type shippingRepo struct {
 	log  *log.Helper
 }
 
-func NewShippingRepo(data *Data, logger log.Logger) biz.ShippingRepo {
+func NewShippingRepo(i do.Injector) (biz.ShippingRepo, error) {
+	data := do.MustInvoke[*Data](i)
+	logger := do.MustInvoke[log.Logger](i)
 	return &shippingRepo{
 		data: data,
 		log:  log.NewHelper(log.With(logger, "module", "data/shipping")),
-	}
+	}, nil
 }
 
 type ShippingEntry struct {

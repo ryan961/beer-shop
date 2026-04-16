@@ -17,6 +17,7 @@ import (
 	"github.com/go-kratos/kratos/v2/config/file"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/go-kratos/kratos/v2/transport/grpc"
+	"github.com/samber/do/v2"
 	tracesdk "go.opentelemetry.io/otel/sdk/trace"
 )
 
@@ -34,7 +35,10 @@ func init() {
 	flag.StringVar(&flagconf, "conf", "../../configs", "config path, eg: -conf config.yaml")
 }
 
-func newApp(logger log.Logger, gs *grpc.Server, rr registry.Registrar) *kratos.App {
+func newApp(i do.Injector) (*kratos.App, error) {
+	logger := do.MustInvoke[log.Logger](i)
+	gs := do.MustInvoke[*grpc.Server](i)
+	rr := do.MustInvoke[registry.Registrar](i)
 	return kratos.New(
 		kratos.Name(Name),
 		kratos.Version(Version),
@@ -44,7 +48,7 @@ func newApp(logger log.Logger, gs *grpc.Server, rr registry.Registrar) *kratos.A
 			gs,
 		),
 		kratos.Registrar(rr),
-	)
+	), nil
 }
 
 func main() {

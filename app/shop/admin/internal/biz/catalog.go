@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/go-kratos/kratos/v2/log"
+	"github.com/samber/do/v2"
 )
 
 type Image struct {
@@ -28,8 +29,10 @@ type CatalogUseCase struct {
 	log  *log.Helper
 }
 
-func NewCatalogUseCase(repo CatalogRepo, logger log.Logger) *CatalogUseCase {
-	return &CatalogUseCase{repo: repo, log: log.NewHelper(log.With(logger, "module", "usecase/beer"))}
+func NewCatalogUseCase(i do.Injector) (*CatalogUseCase, error) {
+	repo := do.MustInvoke[CatalogRepo](i)
+	logger := do.MustInvoke[log.Logger](i)
+	return &CatalogUseCase{repo: repo, log: log.NewHelper(log.With(logger, "module", "usecase/beer"))}, nil
 }
 
 func (uc *CatalogUseCase) GetBeer(ctx context.Context, id int64) (*Beer, error) {

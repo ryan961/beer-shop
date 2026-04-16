@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/go-kratos/kratos/v2/log"
+	"github.com/samber/do/v2"
 )
 
 var _ biz.UserRepo = (*userRepo)(nil)
@@ -24,11 +25,13 @@ type userRepo struct {
 	log  *log.Helper
 }
 
-func NewUserRepo(data *Data, logger log.Logger) biz.UserRepo {
+func NewUserRepo(i do.Injector) (biz.UserRepo, error) {
+	data := do.MustInvoke[*Data](i)
+	logger := do.MustInvoke[log.Logger](i)
 	return &userRepo{
 		data: data,
 		log:  log.NewHelper(log.With(logger, "module", "data/server-service")),
-	}
+	}, nil
 }
 
 func (r *userRepo) FindByUsername(ctx context.Context, username string) (*biz.User, error) {

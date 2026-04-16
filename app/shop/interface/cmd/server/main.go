@@ -1,8 +1,9 @@
 package main
 
 import (
+	"context"
 	"flag"
-	"github.com/go-kratos/kratos/v2/registry"
+	"fmt"
 	"os"
 
 	"github.com/go-kratos/beer-shop/app/shop/interface/internal/conf"
@@ -11,8 +12,10 @@ import (
 	"github.com/go-kratos/kratos/v2/config"
 	"github.com/go-kratos/kratos/v2/config/file"
 	"github.com/go-kratos/kratos/v2/log"
+	"github.com/go-kratos/kratos/v2/registry"
 	"github.com/go-kratos/kratos/v2/transport/grpc"
 	"github.com/go-kratos/kratos/v2/transport/http"
+	"github.com/samber/do/v2"
 	"go.opentelemetry.io/otel/exporters/jaeger"
 	"go.opentelemetry.io/otel/sdk/resource"
 	tracesdk "go.opentelemetry.io/otel/sdk/trace"
@@ -33,7 +36,12 @@ func init() {
 	flag.StringVar(&flagconf, "conf", "../../configs", "config path, eg: -conf config.yaml")
 }
 
-func newApp(logger log.Logger, hs *http.Server, gs *grpc.Server, rr registry.Registrar) *kratos.App {
+func newApp(i do.Injector) (*kratos.App, error) {
+	logger := do.MustInvoke[log.Logger](i)
+	hs := do.MustInvoke[*http.Server](i)
+	gs := do.MustInvoke[*grpc.Server](i)
+	rr := do.MustInvoke[registry.Registrar](i)
+
 	return kratos.New(
 		kratos.Name(Name),
 		kratos.Version(Version),
@@ -44,40 +52,49 @@ func newApp(logger log.Logger, hs *http.Server, gs *grpc.Server, rr registry.Reg
 			gs,
 		),
 		kratos.Registrar(rr),
-	)
+	), nil
 }
 
 func main() {
-	flag.Parse()
 	logger := log.With(log.NewStdLogger(os.Stdout),
 		"service.name", Name,
 		"service.version", Version,
 		"ts", log.DefaultTimestamp,
 		"caller", log.DefaultCaller,
 	)
+	if err := run(logger); err != nil {
+		log.NewHelper(logger).Error(err)
+		os.Exit(1)
+	}
+}
+
+func run(logger log.Logger) error {
+	flag.Parse()
 
 	c := config.New(
 		config.WithSource(
 			file.NewSource(flagconf),
 		),
-
 	)
+	defer func() {
+		_ = c.Close()
+	}()
 	if err := c.Load(); err != nil {
-		panic(err)
+		return fmt.Errorf("load config: %w", err)
 	}
 
 	var bc conf.Bootstrap
 	if err := c.Scan(&bc); err != nil {
-		panic(err)
+		return fmt.Errorf("scan bootstrap config: %w", err)
 	}
 
 	var rc conf.Registry
 	if err := c.Scan(&rc); err != nil {
-		panic(err)
+		return fmt.Errorf("scan registry config: %w", err)
 	}
 	exp, err := jaeger.New(jaeger.WithCollectorEndpoint(jaeger.WithEndpoint(bc.Trace.Endpoint)))
 	if err != nil {
-		panic(err)
+		return fmt.Errorf("create jaeger exporter: %w", err)
 	}
 	tp := tracesdk.NewTracerProvider(
 		tracesdk.WithBatcher(exp),
@@ -85,15 +102,20 @@ func main() {
 			semconv.ServiceNameKey.String(Name),
 		)),
 	)
+	defer func() {
+		_ = tp.Shutdown(context.Background())
+	}()
 
 	app, cleanup, err := initApp(bc.Server, &rc, bc.Data, bc.Auth, logger, tp)
 	if err != nil {
-		panic(err)
+		return fmt.Errorf("init app: %w", err)
 	}
 	defer cleanup()
 
 	// start and wait for stop signal
 	if err := app.Run(); err != nil {
-		panic(err)
+		return fmt.Errorf("run app: %w", err)
 	}
+
+	return nil
 }

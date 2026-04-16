@@ -6,6 +6,7 @@ import (
 
 	"github.com/go-kratos/beer-shop/app/catalog/service/internal/data/ent"
 	"github.com/go-kratos/kratos/v2/log"
+	"github.com/samber/do/v2"
 
 	"github.com/go-kratos/beer-shop/app/catalog/service/internal/conf"
 
@@ -37,12 +38,15 @@ func NewEntClient(conf *conf.Data, logger log.Logger) *ent.Client {
 }
 
 // NewData .
-func NewData(entClient *ent.Client, logger log.Logger) (*Data, error) {
-	log := log.NewHelper(log.With(logger, "module", "catalog-service/data"))
+func NewData(i do.Injector) (*Data, error) {
+	confData := do.MustInvoke[*conf.Data](i)
+	logger := do.MustInvoke[log.Logger](i)
+	entClient := NewEntClient(confData, logger)
+	helper := log.NewHelper(log.With(logger, "module", "catalog-service/data"))
 
 	d := &Data{
 		db:  entClient,
-		log: log,
+		log: helper,
 	}
 	return d, nil
 }

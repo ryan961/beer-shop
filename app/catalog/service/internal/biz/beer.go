@@ -8,6 +8,7 @@ import (
 	"golang.org/x/sync/singleflight"
 
 	"github.com/go-kratos/kratos/v2/log"
+	"github.com/samber/do/v2"
 )
 
 type Image struct {
@@ -38,8 +39,10 @@ type BeerUseCase struct {
 	sg        singleflight.Group
 }
 
-func NewBeerUseCase(repo BeerRepo, logger log.Logger) *BeerUseCase {
-	return &BeerUseCase{repo: repo, log: log.NewHelper(log.With(logger, "module", "usecase/beer")), pageToken: page_token.NewTokenGenerate()}
+func NewBeerUseCase(i do.Injector) (*BeerUseCase, error) {
+	repo := do.MustInvoke[BeerRepo](i)
+	logger := do.MustInvoke[log.Logger](i)
+	return &BeerUseCase{repo: repo, log: log.NewHelper(log.With(logger, "module", "usecase/beer")), pageToken: page_token.NewTokenGenerate()}, nil
 }
 
 func (uc *BeerUseCase) Create(ctx context.Context, u *Beer) (*Beer, error) {

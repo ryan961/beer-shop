@@ -8,6 +8,7 @@ import (
 	v1 "github.com/go-kratos/beer-shop/api/_gen/go/user/service/v1"
 
 	"github.com/go-kratos/kratos/v2/log"
+	"github.com/samber/do/v2"
 )
 
 var (
@@ -32,8 +33,10 @@ type UserUseCase struct {
 	log  *log.Helper
 }
 
-func NewUserUseCase(repo UserRepo, logger log.Logger) *UserUseCase {
-	return &UserUseCase{repo: repo, log: log.NewHelper(log.With(logger, "module", "usecase/user"))}
+func NewUserUseCase(i do.Injector) (*UserUseCase, error) {
+	repo := do.MustInvoke[UserRepo](i)
+	logger := do.MustInvoke[log.Logger](i)
+	return &UserUseCase{repo: repo, log: log.NewHelper(log.With(logger, "module", "usecase/user"))}, nil
 }
 
 func (uc *UserUseCase) Save(ctx context.Context, in *v1.SaveUserReq) (*v1.SaveUserReply, error) {

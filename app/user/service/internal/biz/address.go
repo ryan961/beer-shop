@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/go-kratos/kratos/v2/log"
+	"github.com/samber/do/v2"
 )
 
 type Address struct {
@@ -25,8 +26,10 @@ type AddressUseCase struct {
 	log  *log.Helper
 }
 
-func NewAddressUseCase(repo AddressRepo, logger log.Logger) *AddressUseCase {
-	return &AddressUseCase{repo: repo, log: log.NewHelper(log.With(logger, "module", "usecase/address"))}
+func NewAddressUseCase(i do.Injector) (*AddressUseCase, error) {
+	repo := do.MustInvoke[AddressRepo](i)
+	logger := do.MustInvoke[log.Logger](i)
+	return &AddressUseCase{repo: repo, log: log.NewHelper(log.With(logger, "module", "usecase/address"))}, nil
 }
 
 func (uc *AddressUseCase) Create(ctx context.Context, uid int64, a *Address) (*Address, error) {

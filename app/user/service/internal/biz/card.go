@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/go-kratos/kratos/v2/log"
+	"github.com/samber/do/v2"
 )
 
 type Card struct {
@@ -26,8 +27,10 @@ type CardUseCase struct {
 	log  *log.Helper
 }
 
-func NewCardUseCase(repo CardRepo, logger log.Logger) *CardUseCase {
-	return &CardUseCase{repo: repo, log: log.NewHelper(log.With(logger, "module", "usecase/card"))}
+func NewCardUseCase(i do.Injector) (*CardUseCase, error) {
+	repo := do.MustInvoke[CardRepo](i)
+	logger := do.MustInvoke[log.Logger](i)
+	return &CardUseCase{repo: repo, log: log.NewHelper(log.With(logger, "module", "usecase/card"))}, nil
 }
 
 func (uc *CardUseCase) Create(ctx context.Context, c *Card) (*Card, error) {

@@ -3,6 +3,7 @@ package data
 import (
 	"github.com/IBM/sarama"
 	"github.com/go-kratos/kratos/v2/log"
+	"github.com/samber/do/v2"
 
 	"github.com/go-kratos/beer-shop/app/shipping/service/internal/conf"
 
@@ -17,11 +18,14 @@ type Data struct {
 }
 
 // NewData .
-func NewData(producer sarama.AsyncProducer, conf *conf.Data, logger log.Logger) (*Data, error) {
-	log := log.NewHelper(log.With(logger, "module", "shipping-service/data"))
+func NewData(i do.Injector) (*Data, error) {
+	confData := do.MustInvoke[*conf.Data](i)
+	logger := do.MustInvoke[log.Logger](i)
+	producer := NewKafkaProducer(confData)
+	helper := log.NewHelper(log.With(logger, "module", "shipping-service/data"))
 	d := &Data{
 		kp:  producer,
-		log: log,
+		log: helper,
 	}
 	return d, nil
 }

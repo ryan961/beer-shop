@@ -2,6 +2,7 @@ package data
 
 import (
 	"github.com/go-kratos/kratos/v2/log"
+	"github.com/samber/do/v2"
 )
 
 // Data .
@@ -10,11 +11,12 @@ type Data struct {
 }
 
 // NewData .
-func NewData(logger log.Logger) (*Data, error) {
-	log := log.NewHelper(log.With(logger, "module", "payment-service/data"))
+func NewData(i do.Injector) (*Data, error) {
+	logger := do.MustInvoke[log.Logger](i)
+	helper := log.NewHelper(log.With(logger, "module", "payment-service/data"))
 
 	d := &Data{
-		log: log,
+		log: helper,
 	}
 	return d, nil
 }

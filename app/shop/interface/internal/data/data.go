@@ -2,23 +2,23 @@ package data
 
 import (
 	"context"
+	"errors"
 
 	cartv1 "github.com/go-kratos/beer-shop/api/_gen/go/cart/service/v1"
 	catalogv1 "github.com/go-kratos/beer-shop/api/_gen/go/catalog/service/v1"
-	orderv1 "github.com/go-kratos/beer-shop/api/_gen/go/order/service/v1"
-	paymentv1 "github.com/go-kratos/beer-shop/api/_gen/go/payment/service/v1"
 	userv1 "github.com/go-kratos/beer-shop/api/_gen/go/user/service/v1"
 	"github.com/go-kratos/beer-shop/app/shop/interface/internal/conf"
 
-	consul "github.com/go-kratos/kratos/contrib/registry/consul/v2"
+	"github.com/go-kratos/kratos/contrib/registry/consul/v2"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/go-kratos/kratos/v2/middleware/auth/jwt"
 	"github.com/go-kratos/kratos/v2/middleware/recovery"
 	"github.com/go-kratos/kratos/v2/middleware/tracing"
 	"github.com/go-kratos/kratos/v2/registry"
 	"github.com/go-kratos/kratos/v2/transport/grpc"
-	jwt2 "github.com/golang-jwt/jwt/v4"
+	jwtv5 "github.com/golang-jwt/jwt/v5"
 	consulAPI "github.com/hashicorp/consul/api"
+	"github.com/samber/do/v2"
 	tracesdk "go.opentelemetry.io/otel/sdk/trace"
 )
 
@@ -31,42 +31,39 @@ type Data struct {
 }
 
 // NewData .
-func NewData(
-	conf *conf.Data,
-	logger log.Logger,
-	uc userv1.UserClient,
-	cc cartv1.CartClient,
-	bc catalogv1.CatalogClient,
-) (*Data, error) {
+func NewData(i do.Injector) (*Data, error) {
+	_ = do.MustInvoke[*conf.Data](i)
+	logger := do.MustInvoke[log.Logger](i)
+	uc := do.MustInvoke[userv1.UserClient](i)
+	cc := do.MustInvoke[cartv1.CartClient](i)
+	bc := do.MustInvoke[catalogv1.CatalogClient](i)
+
 	l := log.NewHelper(log.With(logger, "module", "data"))
 	return &Data{log: l, uc: uc, cc: cc, bc: bc}, nil
 }
 
-func NewDiscovery(conf *conf.Registry) registry.Discovery {
-	c := consulAPI.DefaultConfig()
-	c.Address = conf.Consul.Address
-	c.Scheme = conf.Consul.Scheme
-	cli, err := consulAPI.NewClient(c)
+func NewDiscovery(i do.Injector) (registry.Discovery, error) {
+	registryConfig := do.MustInvoke[*conf.Registry](i)
+	cli, err := newConsulClient(registryConfig)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	r := consul.New(cli, consul.WithHealthCheck(false))
-	return r
+	return r, nil
 }
 
-func NewRegistrar(conf *conf.Registry) registry.Registrar {
-	c := consulAPI.DefaultConfig()
-	c.Address = conf.Consul.Address
-	c.Scheme = conf.Consul.Scheme
-	cli, err := consulAPI.NewClient(c)
-	if err != nil {
-		panic(err)
+func NewUserServiceClient(i do.Injector) (userv1.UserClient, error) {
+	ac := do.MustInvoke[*conf.Auth](i)
+	r := do.MustInvoke[registry.Discovery](i)
+	tp := do.MustInvoke[*tracesdk.TracerProvider](i)
+
+	if ac == nil {
+		return nil, errors.New("auth config is required")
 	}
-	r := consul.New(cli, consul.WithHealthCheck(false))
-	return r
-}
+	if r == nil {
+		return nil, errors.New("service discovery is required")
+	}
 
-func NewUserServiceClient(ac *conf.Auth, r registry.Discovery, tp *tracesdk.TracerProvider) userv1.UserClient {
 	conn, err := grpc.DialInsecure(
 		context.Background(),
 		grpc.WithEndpoint("discovery:///beer.user.service"),
@@ -74,19 +71,25 @@ func NewUserServiceClient(ac *conf.Auth, r registry.Discovery, tp *tracesdk.Trac
 		grpc.WithMiddleware(
 			tracing.Client(tracing.WithTracerProvider(tp)),
 			recovery.Recovery(),
-			jwt.Client(func(token *jwt2.Token) (interface{}, error) {
+			jwt.Client(func(token *jwtv5.Token) (any, error) {
 				return []byte(ac.ServiceKey), nil
-			}, jwt.WithSigningMethod(jwt2.SigningMethodHS256)),
+			}, jwt.WithSigningMethod(jwtv5.SigningMethodHS256)),
 		),
 	)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
-	c := userv1.NewUserClient(conn)
-	return c
+	return userv1.NewUserClient(conn), nil
 }
 
-func NewCartServiceClient(r registry.Discovery, tp *tracesdk.TracerProvider) cartv1.CartClient {
+func NewCartServiceClient(i do.Injector) (cartv1.CartClient, error) {
+	r := do.MustInvoke[registry.Discovery](i)
+	tp := do.MustInvoke[*tracesdk.TracerProvider](i)
+
+	if r == nil {
+		return nil, errors.New("service discovery is required")
+	}
+
 	conn, err := grpc.DialInsecure(
 		context.Background(),
 		grpc.WithEndpoint("discovery:///beer.cart.service"),
@@ -97,12 +100,19 @@ func NewCartServiceClient(r registry.Discovery, tp *tracesdk.TracerProvider) car
 		),
 	)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
-	return cartv1.NewCartClient(conn)
+	return cartv1.NewCartClient(conn), nil
 }
 
-func NewCatalogServiceClient(r registry.Discovery, tp *tracesdk.TracerProvider) catalogv1.CatalogClient {
+func NewCatalogServiceClient(i do.Injector) (catalogv1.CatalogClient, error) {
+	r := do.MustInvoke[registry.Discovery](i)
+	tp := do.MustInvoke[*tracesdk.TracerProvider](i)
+
+	if r == nil {
+		return nil, errors.New("service discovery is required")
+	}
+
 	conn, err := grpc.DialInsecure(
 		context.Background(),
 		grpc.WithEndpoint("discovery:///beer.catalog.service"),
@@ -113,39 +123,22 @@ func NewCatalogServiceClient(r registry.Discovery, tp *tracesdk.TracerProvider) 
 		),
 	)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
-	return catalogv1.NewCatalogClient(conn)
+	return catalogv1.NewCatalogClient(conn), nil
 }
 
-func NewOrderServiceClient(r registry.Discovery, tp *tracesdk.TracerProvider) orderv1.OrderClient {
-	conn, err := grpc.DialInsecure(
-		context.Background(),
-		grpc.WithEndpoint("discovery:///beer.order.service"),
-		grpc.WithDiscovery(r),
-		grpc.WithMiddleware(
-			tracing.Client(tracing.WithTracerProvider(tp)),
-			recovery.Recovery(),
-		),
-	)
-	if err != nil {
-		panic(err)
+func newConsulClient(conf *conf.Registry) (*consulAPI.Client, error) {
+	if conf == nil || conf.Consul == nil {
+		return nil, errors.New("registry consul config is required")
 	}
-	return orderv1.NewOrderClient(conn)
-}
 
-func NewPaymentServiceClient(r registry.Discovery, tp *tracesdk.TracerProvider) paymentv1.PaymentClient {
-	conn, err := grpc.DialInsecure(
-		context.Background(),
-		grpc.WithEndpoint("discovery:///beer.payment.service"),
-		grpc.WithDiscovery(r),
-		grpc.WithMiddleware(
-			tracing.Client(tracing.WithTracerProvider(tp)),
-			recovery.Recovery(),
-		),
-	)
+	c := consulAPI.DefaultConfig()
+	c.Address = conf.Consul.Address
+	c.Scheme = conf.Consul.Scheme
+	cli, err := consulAPI.NewClient(c)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
-	return paymentv1.NewPaymentClient(conn)
+	return cli, nil
 }

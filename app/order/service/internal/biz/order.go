@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/go-kratos/kratos/v2/log"
+	"github.com/samber/do/v2"
 )
 
 type Order struct {
@@ -23,8 +24,10 @@ type OrderUseCase struct {
 	log  *log.Helper
 }
 
-func NewOrderUseCase(repo OrderRepo, logger log.Logger) *OrderUseCase {
-	return &OrderUseCase{repo: repo, log: log.NewHelper(log.With(logger, "module", "usecase/order"))}
+func NewOrderUseCase(i do.Injector) (*OrderUseCase, error) {
+	repo := do.MustInvoke[OrderRepo](i)
+	logger := do.MustInvoke[log.Logger](i)
+	return &OrderUseCase{repo: repo, log: log.NewHelper(log.With(logger, "module", "usecase/order"))}, nil
 }
 
 func (uc *OrderUseCase) Create(ctx context.Context, u *Order) (*Order, error) {

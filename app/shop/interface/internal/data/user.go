@@ -3,12 +3,13 @@ package data
 import (
 	"context"
 	"fmt"
-	"golang.org/x/sync/singleflight"
 
 	usV1 "github.com/go-kratos/beer-shop/api/_gen/go/user/service/v1"
 	"github.com/go-kratos/beer-shop/app/shop/interface/internal/biz"
 
 	"github.com/go-kratos/kratos/v2/log"
+	"github.com/samber/do/v2"
+	"golang.org/x/sync/singleflight"
 )
 
 var _ biz.UserRepo = (*userRepo)(nil)
@@ -19,12 +20,15 @@ type userRepo struct {
 	sg   *singleflight.Group
 }
 
-func NewUserRepo(data *Data, logger log.Logger) biz.UserRepo {
+func NewUserRepo(i do.Injector) (biz.UserRepo, error) {
+	data := do.MustInvoke[*Data](i)
+	logger := do.MustInvoke[log.Logger](i)
+
 	return &userRepo{
 		data: data,
 		log:  log.NewHelper(log.With(logger, "module", "repo/user")),
 		sg:   &singleflight.Group{},
-	}
+	}, nil
 }
 
 func (rp *userRepo) VerifyPassword(ctx context.Context, u *biz.User, password string) error {

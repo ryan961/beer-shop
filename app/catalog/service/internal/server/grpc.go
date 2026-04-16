@@ -5,6 +5,7 @@ import (
 	"github.com/go-kratos/beer-shop/app/catalog/service/internal/conf"
 	"github.com/go-kratos/beer-shop/app/catalog/service/internal/service"
 	"github.com/go-kratos/kratos/v2/log"
+	"github.com/samber/do/v2"
 	tracesdk "go.opentelemetry.io/otel/sdk/trace"
 
 	"github.com/go-kratos/kratos/v2/middleware/logging"
@@ -14,7 +15,11 @@ import (
 )
 
 // NewGRPCServer new a gRPC server.
-func NewGRPCServer(c *conf.Server, logger log.Logger, tp *tracesdk.TracerProvider, s *service.CatalogService) *grpc.Server {
+func NewGRPCServer(i do.Injector) (*grpc.Server, error) {
+	c := do.MustInvoke[*conf.Server](i)
+	logger := do.MustInvoke[log.Logger](i)
+	tp := do.MustInvoke[*tracesdk.TracerProvider](i)
+	s := do.MustInvoke[*service.CatalogService](i)
 	var opts = []grpc.ServerOption{
 		grpc.Middleware(
 			recovery.Recovery(),
@@ -34,5 +39,5 @@ func NewGRPCServer(c *conf.Server, logger log.Logger, tp *tracesdk.TracerProvide
 	}
 	srv := grpc.NewServer(opts...)
 	v1.RegisterCatalogServer(srv, s)
-	return srv
+	return srv, nil
 }

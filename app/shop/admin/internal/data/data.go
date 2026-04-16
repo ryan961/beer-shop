@@ -1,6 +1,8 @@
 package data
 
 import (
+	"errors"
+
 	"github.com/go-kratos/beer-shop/app/shop/admin/internal/conf"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/go-kratos/kratos/v2/middleware/recovery"
@@ -10,14 +12,13 @@ import (
 
 	cartv1 "github.com/go-kratos/beer-shop/api/_gen/go/cart/service/v1"
 	catalogv1 "github.com/go-kratos/beer-shop/api/_gen/go/catalog/service/v1"
-	orderv1 "github.com/go-kratos/beer-shop/api/_gen/go/order/service/v1"
-	paymentv1 "github.com/go-kratos/beer-shop/api/_gen/go/payment/service/v1"
 	userv1 "github.com/go-kratos/beer-shop/api/_gen/go/user/service/v1"
 
-	consul "github.com/go-kratos/kratos/contrib/registry/consul/v2"
+	"github.com/go-kratos/kratos/contrib/registry/consul/v2"
 	"github.com/go-kratos/kratos/v2/registry"
 	"github.com/go-kratos/kratos/v2/transport/grpc"
 	consulAPI "github.com/hashicorp/consul/api"
+	"github.com/samber/do/v2"
 	tracesdk "go.opentelemetry.io/otel/sdk/trace"
 )
 
@@ -30,42 +31,54 @@ type Data struct {
 }
 
 // NewData .
-func NewData(
-	conf *conf.Data,
-	logger log.Logger,
-	uc userv1.UserClient,
-	cc cartv1.CartClient,
-	bc catalogv1.CatalogClient,
-) (*Data, error) {
+func NewData(i do.Injector) (*Data, error) {
+	_ = do.MustInvoke[*conf.Data](i)
+	logger := do.MustInvoke[log.Logger](i)
+	uc := do.MustInvoke[userv1.UserClient](i)
+	cc := do.MustInvoke[cartv1.CartClient](i)
+	bc := do.MustInvoke[catalogv1.CatalogClient](i)
 	l := log.NewHelper(log.With(logger, "module", "data"))
 	return &Data{log: l, uc: uc, cc: cc, bc: bc}, nil
 }
 
-func NewDiscovery(conf *conf.Registry) registry.Discovery {
+func NewDiscovery(i do.Injector) (registry.Discovery, error) {
+	registryConf := do.MustInvoke[*conf.Registry](i)
+	if registryConf == nil || registryConf.Consul == nil {
+		return nil, errors.New("registry consul config is required")
+	}
 	c := consulAPI.DefaultConfig()
-	c.Address = conf.Consul.Address
-	c.Scheme = conf.Consul.Scheme
+	c.Address = registryConf.Consul.Address
+	c.Scheme = registryConf.Consul.Scheme
 	cli, err := consulAPI.NewClient(c)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	r := consul.New(cli, consul.WithHealthCheck(false))
-	return r
+	return r, nil
 }
 
-func NewRegistrar(conf *conf.Registry) registry.Registrar {
+func NewRegistrar(i do.Injector) (registry.Registrar, error) {
+	registryConf := do.MustInvoke[*conf.Registry](i)
+	if registryConf == nil || registryConf.Consul == nil {
+		return nil, errors.New("registry consul config is required")
+	}
 	c := consulAPI.DefaultConfig()
-	c.Address = conf.Consul.Address
-	c.Scheme = conf.Consul.Scheme
+	c.Address = registryConf.Consul.Address
+	c.Scheme = registryConf.Consul.Scheme
 	cli, err := consulAPI.NewClient(c)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	r := consul.New(cli, consul.WithHealthCheck(false))
-	return r
+	return r, nil
 }
 
-func NewUserServiceClient(r registry.Discovery, tp *tracesdk.TracerProvider) userv1.UserClient {
+func NewUserServiceClient(i do.Injector) (userv1.UserClient, error) {
+	r := do.MustInvoke[registry.Discovery](i)
+	tp := do.MustInvoke[*tracesdk.TracerProvider](i)
+	if r == nil {
+		return nil, errors.New("service discovery is required")
+	}
 	conn, err := grpc.DialInsecure(
 		context.Background(),
 		grpc.WithEndpoint("discovery:///beer.user.service"),
@@ -76,13 +89,18 @@ func NewUserServiceClient(r registry.Discovery, tp *tracesdk.TracerProvider) use
 		),
 	)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	c := userv1.NewUserClient(conn)
-	return c
+	return c, nil
 }
 
-func NewCartServiceClient(r registry.Discovery, tp *tracesdk.TracerProvider) cartv1.CartClient {
+func NewCartServiceClient(i do.Injector) (cartv1.CartClient, error) {
+	r := do.MustInvoke[registry.Discovery](i)
+	tp := do.MustInvoke[*tracesdk.TracerProvider](i)
+	if r == nil {
+		return nil, errors.New("service discovery is required")
+	}
 	conn, err := grpc.DialInsecure(
 		context.Background(),
 		grpc.WithEndpoint("discovery:///beer.cart.service"),
@@ -93,12 +111,17 @@ func NewCartServiceClient(r registry.Discovery, tp *tracesdk.TracerProvider) car
 		),
 	)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
-	return cartv1.NewCartClient(conn)
+	return cartv1.NewCartClient(conn), nil
 }
 
-func NewCatalogServiceClient(r registry.Discovery, tp *tracesdk.TracerProvider) catalogv1.CatalogClient {
+func NewCatalogServiceClient(i do.Injector) (catalogv1.CatalogClient, error) {
+	r := do.MustInvoke[registry.Discovery](i)
+	tp := do.MustInvoke[*tracesdk.TracerProvider](i)
+	if r == nil {
+		return nil, errors.New("service discovery is required")
+	}
 	conn, err := grpc.DialInsecure(
 		context.Background(),
 		grpc.WithEndpoint("discovery:///beer.catalog.service"),
@@ -109,39 +132,7 @@ func NewCatalogServiceClient(r registry.Discovery, tp *tracesdk.TracerProvider) 
 		),
 	)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
-	return catalogv1.NewCatalogClient(conn)
-}
-
-func NewOrderServiceClient(r registry.Discovery, tp *tracesdk.TracerProvider) orderv1.OrderClient {
-	conn, err := grpc.DialInsecure(
-		context.Background(),
-		grpc.WithEndpoint("discovery:///beer.order.service"),
-		grpc.WithDiscovery(r),
-		grpc.WithMiddleware(
-			tracing.Client(tracing.WithTracerProvider(tp)),
-			recovery.Recovery(),
-		),
-	)
-	if err != nil {
-		panic(err)
-	}
-	return orderv1.NewOrderClient(conn)
-}
-
-func NewPaymentServiceClient(r registry.Discovery, tp *tracesdk.TracerProvider) paymentv1.PaymentClient {
-	conn, err := grpc.DialInsecure(
-		context.Background(),
-		grpc.WithEndpoint("discovery:///beer.payment.service"),
-		grpc.WithDiscovery(r),
-		grpc.WithMiddleware(
-			tracing.Client(tracing.WithTracerProvider(tp)),
-			recovery.Recovery(),
-		),
-	)
-	if err != nil {
-		panic(err)
-	}
-	return paymentv1.NewPaymentClient(conn)
+	return catalogv1.NewCatalogClient(conn), nil
 }

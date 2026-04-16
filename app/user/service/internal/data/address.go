@@ -6,6 +6,7 @@ import (
 	"github.com/go-kratos/beer-shop/app/user/service/internal/biz"
 
 	"github.com/go-kratos/kratos/v2/log"
+	"github.com/samber/do/v2"
 )
 
 var _ biz.AddressRepo = (*addressRepo)(nil)
@@ -15,11 +16,13 @@ type addressRepo struct {
 	log  *log.Helper
 }
 
-func NewAddressRepo(data *Data, logger log.Logger) biz.AddressRepo {
+func NewAddressRepo(i do.Injector) (biz.AddressRepo, error) {
+	data := do.MustInvoke[*Data](i)
+	logger := do.MustInvoke[log.Logger](i)
 	return &addressRepo{
 		data: data,
 		log:  log.NewHelper(log.With(logger, "module", "data/address")),
-	}
+	}, nil
 }
 
 func (r *addressRepo) CreateAddress(ctx context.Context, a *biz.Address) (*biz.Address, error) {

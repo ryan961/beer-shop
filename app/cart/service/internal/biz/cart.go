@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/go-kratos/kratos/v2/log"
+	"github.com/samber/do/v2"
 )
 
 type Item struct {
@@ -27,8 +28,10 @@ type CartUseCase struct {
 	log  *log.Helper
 }
 
-func NewCartUseCase(repo CartRepo, logger log.Logger) *CartUseCase {
-	return &CartUseCase{repo: repo, log: log.NewHelper(log.With(logger, "module", "usecase/cart"))}
+func NewCartUseCase(i do.Injector) (*CartUseCase, error) {
+	repo := do.MustInvoke[CartRepo](i)
+	logger := do.MustInvoke[log.Logger](i)
+	return &CartUseCase{repo: repo, log: log.NewHelper(log.With(logger, "module", "usecase/cart"))}, nil
 }
 
 func (uc *CartUseCase) GetCart(ctx context.Context, uid int64) (*Cart, error) {

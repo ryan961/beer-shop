@@ -6,6 +6,7 @@ import (
 	"github.com/go-kratos/beer-shop/pkg/util/pagination"
 
 	"github.com/go-kratos/kratos/v2/log"
+	"github.com/samber/do/v2"
 )
 
 var _ biz.BeerRepo = (*beerRepo)(nil)
@@ -15,11 +16,13 @@ type beerRepo struct {
 	log  *log.Helper
 }
 
-func NewBeerRepo(data *Data, logger log.Logger) biz.BeerRepo {
+func NewBeerRepo(i do.Injector) (biz.BeerRepo, error) {
+	data := do.MustInvoke[*Data](i)
+	logger := do.MustInvoke[log.Logger](i)
 	return &beerRepo{
 		data: data,
 		log:  log.NewHelper(log.With(logger, "module", "data/beer")),
-	}
+	}, nil
 }
 
 func (r *beerRepo) CreateBeer(ctx context.Context, b *biz.Beer) (*biz.Beer, error) {

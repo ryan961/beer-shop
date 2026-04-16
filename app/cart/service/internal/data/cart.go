@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/go-kratos/kratos/v2/log"
+	"github.com/samber/do/v2"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 
@@ -18,12 +19,14 @@ type cartRepo struct {
 	log      *log.Helper
 }
 
-func NewCartRepo(data *Data, logger log.Logger) biz.CartRepo {
+func NewCartRepo(i do.Injector) (biz.CartRepo, error) {
+	data := do.MustInvoke[*Data](i)
+	logger := do.MustInvoke[log.Logger](i)
 	return &cartRepo{
 		data:     data,
 		cartColl: data.db.Collection("cart"),
 		log:      log.NewHelper(log.With(logger, "module", "repo/beer")),
-	}
+	}, nil
 }
 
 type Cart struct {

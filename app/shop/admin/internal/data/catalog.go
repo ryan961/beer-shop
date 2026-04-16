@@ -5,6 +5,7 @@ import (
 
 	"github.com/go-kratos/beer-shop/app/shop/admin/internal/biz"
 	"github.com/go-kratos/kratos/v2/log"
+	"github.com/samber/do/v2"
 
 	catalogv1 "github.com/go-kratos/beer-shop/api/_gen/go/catalog/service/v1"
 )
@@ -16,11 +17,13 @@ type catalogRepo struct {
 	log  *log.Helper
 }
 
-func NewCatalogRepo(data *Data, logger log.Logger) biz.CatalogRepo {
+func NewCatalogRepo(i do.Injector) (biz.CatalogRepo, error) {
+	data := do.MustInvoke[*Data](i)
+	logger := do.MustInvoke[log.Logger](i)
 	return &catalogRepo{
 		data: data,
 		log:  log.NewHelper(log.With(logger, "module", "data/beer")),
-	}
+	}, nil
 }
 
 func (r *catalogRepo) GetBeer(ctx context.Context, id int64) (*biz.Beer, error) {

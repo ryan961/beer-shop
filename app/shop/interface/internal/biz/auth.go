@@ -8,6 +8,7 @@ import (
 	"github.com/go-kratos/beer-shop/app/shop/interface/internal/conf"
 
 	"github.com/golang-jwt/jwt"
+	"github.com/samber/do/v2"
 )
 
 var (
@@ -19,11 +20,14 @@ type AuthUseCase struct {
 	userRepo UserRepo
 }
 
-func NewAuthUseCase(conf *conf.Auth, userRepo UserRepo) *AuthUseCase {
+func NewAuthUseCase(i do.Injector) (*AuthUseCase, error) {
+	authConfig := do.MustInvoke[*conf.Auth](i)
+	userRepo := do.MustInvoke[UserRepo](i)
+
 	return &AuthUseCase{
-		key:      conf.ApiKey,
+		key:      authConfig.ApiKey,
 		userRepo: userRepo,
-	}
+	}, nil
 }
 
 func (receiver *AuthUseCase) Login(ctx context.Context, req *v1.LoginReq) (*v1.LoginReply, error) {
