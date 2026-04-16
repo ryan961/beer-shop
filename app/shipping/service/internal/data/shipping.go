@@ -4,7 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/Shopify/sarama"
+
+	"github.com/IBM/sarama"
 	"github.com/go-kratos/kratos/v2/log"
 
 	"github.com/go-kratos/beer-shop/app/shipping/service/internal/biz"

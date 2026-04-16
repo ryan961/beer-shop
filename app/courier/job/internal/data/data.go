@@ -6,7 +6,7 @@ import (
 	orderv1 "github.com/go-kratos/beer-shop/api/_gen/go/order/service/v1"
 	"github.com/go-kratos/beer-shop/app/courier/job/internal/conf"
 
-	"github.com/Shopify/sarama"
+	"github.com/IBM/sarama"
 	consul "github.com/go-kratos/kratos/contrib/registry/consul/v2"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/go-kratos/kratos/v2/middleware/recovery"
